@@ -36,6 +36,7 @@
 #include <mpd/entity.h>
 #include <mpd/search.h>
 #include <mpd/tag.h>
+#include <mpd/tagstats.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -340,6 +341,54 @@ test_list_artists(struct mpd_connection *conn)
 }
 
 static int
+print_tagstats(struct mpd_tagstats *tag_stats)
+{
+	int result = 0;
+	const int MaxName = 32;
+	char tmp_name[MaxName];
+
+	for (int tag_type = 0; tag_type < MPD_TAG_COUNT; ++tag_type) {
+		const char* tag_name = mpd_tag_name(tag_type);
+		if (tag_name == NULL) {
+			LOG_ERROR("no name found for tag value %d", tag_type);
+			int n = snprintf(tmp_name, MaxName, "mpd_tag_type %u", tag_type);
+			if (n < 0) {
+				tmp_name[0] = '\0';
+			}
+			else if (n >= MaxName) {
+				tmp_name[MaxName - 1] = '\0';
+			}
+			tag_name = tmp_name;
+			result = -1;
+		}
+		unsigned count = mpd_tagstats_get_number_of_values(tag_stats, tag_type);
+		printf("%s: %u\n", tag_name, count);
+	}
+	return result;
+}
+
+static int
+test_tagstats(struct mpd_connection *conn)
+{
+	struct mpd_tagstats *tag_stats;
+
+	tag_stats = mpd_run_tagstats(conn);
+	if (!tag_stats) {
+		LOG_ERROR("%s", mpd_connection_get_error_message(conn));
+		return -1;
+	}
+
+	int result = print_tagstats(tag_stats);
+
+	mpd_tagstats_free(tag_stats);
+
+	mpd_response_finish(conn);
+	CHECK_CONNECTION(conn);
+
+	return result;
+}
+
+static int
 test_close_connection(struct mpd_connection *conn)
 {
 	mpd_connection_free(conn);
@@ -365,6 +414,7 @@ main(int argc, char ** argv)
 	START_TEST("List commands: 'status' and 'currentsong'", test_list_status_currentsong, conn);
 	START_TEST("'lsinfo' command", test_lsinfo, conn, lsinfo_path);
 	START_TEST("'list artist' command", test_list_artists, conn);
+	START_TEST("'tagstats' command", test_tagstats, conn);
 	START_TEST("Test connection closing", test_close_connection, conn);
 
 	return 0;

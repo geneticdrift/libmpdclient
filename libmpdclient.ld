@@ -457,6 +457,15 @@ global:
 	mpd_send_replay_gain_mode;
 	mpd_run_replay_gain_mode;
 
+	/* mpd/tagstats.h */
+	mpd_send_tagstats;
+	mpd_tagstats_begin;
+	mpd_tagstats_feed;
+	mpd_recv_tagstats;
+	mpd_run_tagstats;
+	mpd_tagstats_free;
+	mpd_tagstats_get_number_of_values;
+
 local:
 	*;
 };
